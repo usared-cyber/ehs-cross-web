@@ -6,30 +6,30 @@
     <meta http-equiv="refresh" content="300">
     <title>EHS 数字化看板</title>
     <style>
-        :root { --cell: 5.5vw; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
+        body {
             background-color: #f8f9fa; height: 100vh; width: 100vw;
-            display: flex; justify-content: center; align-items: center; 
+            display: flex; justify-content: center; align-items: center;
             font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
-            overflow: hidden; 
+            overflow: hidden;
         }
-        .container { 
-            width: 100%; height: 100%; 
+        .container {
+            width: 100%; height: 100%;
             background: white; padding: 2% 4%;
             display: flex; flex-direction: column; justify-content: space-between;
         }
-        
+
         .header { display: flex; justify-content: space-between; align-items: flex-end; }
         .title { font-size: 3.8vw; font-weight: 900; color: #2c3e50; }
         #live-clock { font-size: 1.8vw; font-weight: bold; color: #666; font-family: monospace; }
         .days-box { background: #00b050; color: white; padding: 8px 40px; font-size: 5.5vw; font-weight: 900; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,176,80,0.3); line-height: 1.1; }
-        .header-sub { margin-top: 10px; display: flex; align-items: center; justify-content: flex-end; gap: 20px; }
-        .days-label { font-size: 1.8vw; font-weight: bold; color: #888; }
+        .header-sub { margin-top: 10px; display: flex; align-items: center; justify-content: flex-end; }
+        .days-label { font-size: 1.8vw; font-weight: bold; color: #888; margin-right: 20px; }
 
-        .main-content { flex: 1; display: flex; justify-content: center; align-items: center; gap: 8vw; }
+        .main-content { flex: 1; display: flex; justify-content: center; align-items: center; }
 
-        .cross-grid { display: grid; grid-template-columns: repeat(7, var(--cell)); grid-template-rows: repeat(7, var(--cell)); gap: 10px; }
+        /* 十字尺寸按「高度」推导：任何宽高比的大屏都能完整放下 31 格 */
+        .cross-grid { display: grid; grid-template-columns: repeat(7, calc((68vh - 60px) / 7)); grid-template-rows: repeat(7, calc((68vh - 60px) / 7)); grid-gap: 10px; gap: 10px; }
         .day-cell { border: 2px solid #333; display: flex; align-items: center; justify-content: center; font-size: 2vw; font-weight: bold; }
 
         .green { background-color: #00b050; color: white; border-color: #008d40; }
@@ -37,8 +37,8 @@
         .red { background-color: #ff0000; color: white; border-color: #cc0000; }
         .future { background-color: #fff; color: #eee; border: 1px dashed #eee; }
 
-        .today-active { 
-            background-color: #fff; border: 0.7vw solid #007bff; 
+        .today-active {
+            background-color: #fff; border: 0.7vw solid #007bff;
             animation: breathe 2.5s infinite; z-index: 10;
         }
         @keyframes breathe {
@@ -54,48 +54,91 @@
         .day-21 { grid-area: 5/1; } .day-22 { grid-area: 5/2; } .day-23 { grid-area: 5/3; } .day-24 { grid-area: 5/4; } .day-25 { grid-area: 5/5; } .day-26 { grid-area: 5/6; } .day-27 { grid-area: 5/7; }
         .day-28 { grid-area: 6/3; } .day-29 { grid-area: 6/4; } .day-30 { grid-area: 6/5; } .day-31 { grid-area: 7/4; }
 
-        .legend { display: flex; flex-direction: column; gap: 4vh; }
-        .legend-item { display: flex; align-items: center; gap: 20px; }
-        .l-box { width: 4.5vw; height: 4.5vw; border: 2px solid #333; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 8px; font-size: 1.2vw; }
+        /* 不用 flex 的 gap（老内核 WebView 不支持，会全部失效变成 0 间距），一律用 margin */
+        .legend { display: flex; flex-direction: column; margin-left: 8vw; }
+        .legend-item { display: flex; align-items: center; }
+        .legend-item + .legend-item { margin-top: 4vh; }
+        .l-box { width: 4.5vw; height: 4.5vw; border: 2px solid #333; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 8px; font-size: 1.2vw; flex-shrink: 0; }
+        .l-text { margin-left: 20px; }
         .l-text b { font-size: 1.6vw; color: #333; display: block; }
         .l-text small { font-size: 1vw; color: #888; }
 
-        /* ===== 手机竖屏 / 窄屏：改为上下堆叠，尺寸固定，可滚动兜底 ===== */
-        @media (max-width: 760px) {
-            body { height: auto; min-height: 100vh; overflow-x: hidden; overflow-y: auto; display: block; }
-            .container { height: auto; min-height: 100vh; padding: 16px 16px 10px; gap: 14px; justify-content: flex-start; }
-            .header { flex-direction: column; align-items: flex-start; gap: 8px; }
-            .title { font-size: 26px; }
-            #live-clock { font-size: 15px; }
-            .header-sub { margin-top: 4px; display: flex; align-items: center; justify-content: flex-start; gap: 12px; }
-            .days-label { font-size: 15px; font-weight: bold; color: #888; }
-            .days-box { font-size: 32px; padding: 4px 22px; border-radius: 8px; }
-            .main-content { flex-direction: column; gap: 18px; padding: 6px 0; }
-            .cross-grid { --cell: min(11vw, 46px); gap: 5px; margin: 0 auto; }
-            .day-cell { font-size: calc(var(--cell) * 0.45); border-width: 1.5px; }
-            .today-active { border-width: 3px; }
-            .legend { gap: 12px; width: 100%; }
-            .legend-item { gap: 12px; }
-            .l-box { width: 32px; height: 32px; font-size: 12px; border-radius: 6px; flex-shrink: 0; }
-            .l-text b { font-size: 14px; }
-            .l-text small { font-size: 11px; }
-            .footer-tip { font-size: 10px; }
+        /* ===== 超宽屏（宽高比>2:1：LED拼接/带鱼屏/压矮的窗口）：全部按高度定尺寸 ===== */
+        @media (min-aspect-ratio: 2/1) {
+            .container { padding: 2vh 4vw; }
+            .title { font-size: 6vh; }
+            #live-clock { font-size: 2.6vh; }
+            .days-label { font-size: 2.6vh; margin-right: 24px; }
+            .days-box { font-size: 9vh; padding: 6px 34px; }
+            .cross-grid { grid-template-columns: repeat(7, calc((74vh - 60px) / 7)); grid-template-rows: repeat(7, calc((74vh - 60px) / 7)); }
+            .day-cell { font-size: 3.8vh; }
+            .today-active { border-width: 1.3vh; }
+            .legend { margin-left: 10vh; }
+            .legend-item + .legend-item { margin-top: 6vh; }
+            .l-box { width: 8vh; height: 8vh; font-size: 2.2vh; }
+            .l-text { margin-left: 24px; }
+            .l-text b { font-size: 2.6vh; }
+            .l-text small { font-size: 1.8vh; }
+            .footer-tip { font-size: 1.6vh; }
         }
 
-        /* ===== 手机横屏 / 矮窗口：保持左右布局，按高度收缩十字，确保 31 格完整 ===== */
-        @media (min-width: 761px) and (max-height: 560px) {
-            .cross-grid { --cell: min(5.5vw, calc((100vh - 180px) / 7)); }
-            .day-cell { font-size: calc(var(--cell) * 0.38); }
-            .today-active { border-width: calc(var(--cell) * 0.13); }
-            .title { font-size: min(3.8vw, 44px); }
-            #live-clock { font-size: min(1.8vw, 20px); }
-            .days-label { font-size: min(1.8vw, 20px); }
-            .days-box { font-size: min(5vw, 54px); padding: 4px 26px; }
-            .l-box { width: min(4.5vw, 42px); height: min(4.5vw, 42px); font-size: 12px; border-radius: 6px; }
-            .l-text b { font-size: 15px; }
+        /* ===== 横屏但视口矮（高<=620px：DPR偏大的安卓大屏/半屏窗口）：再收一档 ===== */
+        @media (min-width: 761px) and (max-height: 620px) {
+            .container { padding: 2vh 4vw; }
+            .title { font-size: 5vh; }
+            #live-clock { font-size: 2.4vh; }
+            .days-label { font-size: 2.4vh; margin-right: 18px; }
+            .days-box { font-size: 8vh; padding: 4px 26px; }
+            .cross-grid { grid-template-columns: repeat(7, calc((66vh - 60px) / 7)); grid-template-rows: repeat(7, calc((66vh - 60px) / 7)); }
+            .day-cell { font-size: 3.4vh; }
+            .today-active { border-width: 1.1vh; }
+            .legend { margin-left: 6vw; }
+            .legend-item + .legend-item { margin-top: 4vh; }
+            .l-box { width: 7vh; height: 7vh; font-size: 2vh; }
+            .l-text { margin-left: 18px; }
+            .l-text b { font-size: 2.2vh; }
+            .l-text small { font-size: 1.6vh; }
+            .footer-tip { font-size: 1.4vh; }
+        }
+
+        /* ===== 竖屏中大屏（宽>=761px 且竖向：竖装会议屏/平板）：上下堆叠 ===== */
+        @media (min-width: 761px) and (orientation: portrait) {
+            body { height: auto; min-height: 100vh; overflow-x: hidden; overflow-y: auto; display: block; }
+            .container { height: auto; min-height: 100vh; padding: 2.5% 5%; justify-content: flex-start; }
+            .main-content { flex-direction: column; padding: 1vh 0; }
+            .cross-grid { grid-template-columns: repeat(7, 11vw); grid-template-rows: repeat(7, 11vw); grid-gap: 1vw; gap: 1vw; margin: 0 auto; }
+            .day-cell { font-size: 4.8vw; }
+            .today-active { border-width: 0.9vw; }
+            .legend { margin-left: 0; margin-top: 3vh; width: 100%; padding: 0 4%; }
+            .legend-item + .legend-item { margin-top: 2.5vh; }
+            .l-box { width: 5vw; height: 5vw; font-size: 1.6vw; }
+            .l-text { margin-left: 2vw; }
+            .l-text b { font-size: 2.2vw; }
+            .l-text small { font-size: 1.5vw; }
+            .footer-tip { font-size: 1.6vw; padding: 2vh 0; }
+        }
+
+        /* ===== 手机竖屏 / 窄屏（<=760px）：上下堆叠，可滚动兜底 ===== */
+        @media (max-width: 760px) {
+            body { height: auto; min-height: 100vh; overflow-x: hidden; overflow-y: auto; display: block; }
+            .container { height: auto; min-height: 100vh; padding: 16px 16px 10px; justify-content: flex-start; }
+            .header { flex-direction: column; align-items: flex-start; }
+            .title { font-size: 26px; }
+            #live-clock { font-size: 15px; }
+            .header-sub { margin-top: 4px; justify-content: flex-start; }
+            .days-label { font-size: 15px; font-weight: bold; color: #888; margin-right: 12px; }
+            .days-box { font-size: 32px; padding: 4px 22px; border-radius: 8px; }
+            .main-content { flex-direction: column; padding: 6px 0; }
+            .cross-grid { grid-template-columns: repeat(7, 11vw); grid-template-rows: repeat(7, 11vw); grid-gap: 5px; gap: 5px; margin: 0 auto; }
+            .day-cell { font-size: 5vw; border-width: 1.5px; }
+            .today-active { border-width: 3px; }
+            .legend { margin-left: 0; margin-top: 18px; width: 100%; }
+            .legend-item + .legend-item { margin-top: 12px; }
+            .l-box { width: 32px; height: 32px; font-size: 12px; border-radius: 6px; flex-shrink: 0; }
+            .l-text { margin-left: 12px; }
+            .l-text b { font-size: 14px; }
             .l-text small { font-size: 11px; }
-            .legend { gap: 12px; }
-            .main-content { gap: 5vw; }
+            .footer-tip { font-size: 10px; padding: 8px 0; }
         }
     </style>
 </head>
